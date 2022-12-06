@@ -1,0 +1,97 @@
+---
+title: "Untitled"
+author: "Kasper EMil Appel Madsen"
+date: "6th december 2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Loading in the libraries 
+
+First we start by loading in the following packages from our library. We do this by using the string "library() and then enter the package that we would like to activate. 
+
+```{r libraries}
+library(rvest)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(janitor)
+library(ggplot2)
+```
+
+#Ad the website to Rstudio 
+
+I have chosen to work with af table about world population from the follwing link: https://www.worldometers.info/world-population/population-by-country/. 
+
+To use the website we start by defining the string as url and then get Rstudio to scrape the website. This we do by using the string "url <- read_html(url)" 
+
+```{r url}
+url <- "https://www.worldometers.info/world-population/population-by-country/"
+# scrape the website 
+url_html <- read_html(url)
+```
+
+#Scrape the table
+We then scrape the table by using the the following string: 
+
+```{r Scrape table}
+whole_table <- url_html %>% 
+ html_nodes("table") %>%
+ html_table()  #str(whole_table) turns out to be a list
+str(whole_table)
+whole_table[[1]]
+whole_table
+```
+
+#Make the data a useful dataframe 
+Before we can use the table we will need to make it a dataframe. This we do by using the following string:
+```{r make the table a dataframe}
+new_table <- do.call(cbind,unlist(whole_table, recursive = FALSE)) 
+head(new_table)
+```
+
+#Change column names
+I have then chosen to rename the second column to "Country" and the second column to "population" This we do by using the string: "colnames(new_table)[number of the column we wish to rename] = "The new name""
+```{r change the column names}
+colnames(new_table)[2] = "Country"
+colnames(new_table)[3] = "population"
+```
+
+#Clean up the data
+I will then clean the data so that it is easier to work with. As of now the data is a character matrix and i clean up the data by using the following string.
+
+```{r clean the table}
+new_table <- as_tibble(new_table)
+str(new_table)
+```
+In the table the numbers are separated by kommas. To get rid of the kommas we use the following string:
+```{r erase the kommas}
+col_conv <-  c("population")                                             
+
+my_data_updated <-  new_table                                            
+my_data_updated[ , col_conv] <-  lapply(my_data_updated[ , col_conv], 
+                                       function(x){ as.numeric(as.character(gsub(",", "", x))) })
+```
+
+#Change the data to be 'numeric'
+To use the data we will need to make the column population in our dataset 'numeric' which we do by using the following code
+```{r make data numeric}
+data <- my_data_updated %>% 
+	mutate(population = as.numeric(population))
+```
+
+We can now make a graf over the dataset. I have chosen to pick 6 countries to be in the graf as putting all the countries in the graf will be too overwhelming and messy. I have chosen Denmark, Norway, Sweden, Germany, Japan and United States. 
+
+First we start by selecting the columns country and population in our dataset by using the function "select()". I then filter the 6 countries i have chosen using the "filter()" function. I then use the "ggplot()" function to make my graf and put Country on my x-axis and my population on the y-axis. I have then chosen to make my graf a bar chart by using the function "geom_col()". And then for asctetic purposes i have used the "labs()" function to give my graf a title which i have named "Population by Country", renamed "Country" to "Countries" and "population" to "Population". 
+```{r make the graf}
+my_data_updated %>% 
+  select(Country, population) %>% 
+  filter(Country %in% c("Denmark", "Norway", "Sweden", "Germany", "Japan", "United States")) %>% 
+  ggplot(aes(x = Country, y = population))+
+  geom_col()+
+  labs(title = "Population by Country", x = "Countries", y = "Population")
+```
+
